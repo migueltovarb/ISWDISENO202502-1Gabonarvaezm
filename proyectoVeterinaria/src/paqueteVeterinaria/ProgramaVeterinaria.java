@@ -14,7 +14,7 @@ public class ProgramaVeterinaria {
 
         int opcion;
         do {
-            System.out.println("\n=== 🐾 MENÚ VETERINARIA 🐾 ===");
+            System.out.println("\n MENÚ VETERINARIA ");
             System.out.println("1. Registrar dueño");
             System.out.println("2. Registrar mascota");
             System.out.println("3. Registrar control veterinario");
@@ -139,7 +139,7 @@ public class ProgramaVeterinaria {
                         tipo = sc.nextInt();
                         sc.nextLine();
                     } else {
-                        System.out.println("⚠️ Opción inválida.");
+                        System.out.println(" Opción inválida.");
                         sc.next();
                         break;
                     }
