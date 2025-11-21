@@ -1,12 +1,12 @@
 package com.residencial.acceso.service.impl;
 
+import com.residencial.acceso.config.JwtProperties;
 import com.residencial.acceso.model.Usuario;
 import com.residencial.acceso.service.ISeguridadService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -15,26 +15,23 @@ import java.util.Date;
 
 @Service
 public class SeguridadServiceImpl implements ISeguridadService {
-    @Value("${jwt.secret}")
-    private String jwtSecret;
-
-    @Value("${jwt.expiration-minutes}")
-    private int jwtExpirationMinutes;
+    private final JwtProperties jwtProperties;
 
     private final PasswordEncoder passwordEncoder;
 
-    public SeguridadServiceImpl(PasswordEncoder passwordEncoder) {
+    public SeguridadServiceImpl(JwtProperties jwtProperties, PasswordEncoder passwordEncoder) {
+        this.jwtProperties = jwtProperties;
         this.passwordEncoder = passwordEncoder;
     }
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
 
     @Override
     public String generarToken(Usuario usuario) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpirationMinutes * 60 * 1000);
+        Date expiryDate = new Date(now.getTime() + jwtProperties.getExpirationMinutes() * 60 * 1000);
 
         return Jwts.builder()
                 .setSubject(usuario.getEmail())

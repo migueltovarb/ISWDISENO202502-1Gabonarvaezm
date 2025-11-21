@@ -23,6 +23,8 @@ public class SalidaServiceImpl implements ISalidaService {
 
     @Override
     public Salida registrarSalida(SalidaRequest request) {
+        java.util.Objects.requireNonNull(request.getEntradaId());
+        java.util.Objects.requireNonNull(request.getVigilanteId());
         Entrada entrada = entradaRepository.findById(request.getEntradaId())
                 .orElseThrow(() -> new NotFoundException("Entrada no encontrada"));
         
@@ -51,6 +53,7 @@ public class SalidaServiceImpl implements ISalidaService {
 
     @Override
     public void eliminar(String id) {
+        java.util.Objects.requireNonNull(id);
         Salida salida = salidaRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Salida no encontrada"));
         salidaRepository.delete(salida);
