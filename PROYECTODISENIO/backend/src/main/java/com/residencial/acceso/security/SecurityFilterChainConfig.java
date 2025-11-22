@@ -32,7 +32,7 @@ public class SecurityFilterChainConfig {
                         .requestMatchers("/api/auth/**", "/api/auth2/**", "/api/debug/**", "/api/setup/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/entradas/**", "/api/salidas/**").hasRole("VIGILANTE")
                         .requestMatchers(HttpMethod.DELETE, "/api/entradas/**", "/api/salidas/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/notificaciones/**").hasAnyRole("ADMIN", "RESIDENTE", "VIGILANTE")
+                        .requestMatchers(HttpMethod.DELETE, "/api/notificaciones/**").hasAnyRole("ADMIN", "RESIDENTE")
                         .requestMatchers(HttpMethod.DELETE, "/api/visitantes/**").hasAnyRole("ADMIN", "VIGILANTE")
                         .anyRequest().permitAll()
                 )

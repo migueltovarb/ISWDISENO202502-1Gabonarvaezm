@@ -48,8 +48,30 @@ public class NotificacionServiceImpl implements INotificacionService {
 
     @Override
     public void eliminar(String id) {
+        java.util.Objects.requireNonNull(id);
         Notificacion n = notificacionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Notificación no encontrada"));
+
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new com.residencial.acceso.exception.UnauthorizedException("No autenticado");
+        }
+
+        Object principal = auth.getPrincipal();
+        com.residencial.acceso.model.Usuario usuarioActual = principal instanceof com.residencial.acceso.security.UserDetailsImpl
+                ? ((com.residencial.acceso.security.UserDetailsImpl) principal).getUsuario()
+                : null;
+
+        if (usuarioActual == null) {
+            throw new com.residencial.acceso.exception.UnauthorizedException("No autenticado");
+        }
+
+        boolean permitido = usuarioActual.getRol() == com.residencial.acceso.model.Rol.ADMIN
+                || n.getResidenteId().equals(usuarioActual.getId());
+        if (!permitido) {
+            throw new com.residencial.acceso.exception.UnauthorizedException("No autorizado");
+        }
+
         notificacionRepository.delete(n);
     }
 }
