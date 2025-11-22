@@ -10,8 +10,7 @@
     {
       "name": "jwt.expiration-minutes",
       "type": "java.lang.Integer",
-      "sourceType": "com.residencial.acceso.config.JwtProperties",
-      "defaultValue": 0
+      "sourceType": "com.residencial.acceso.config.JwtProperties"
     },
     {
       "name": "jwt.secret",

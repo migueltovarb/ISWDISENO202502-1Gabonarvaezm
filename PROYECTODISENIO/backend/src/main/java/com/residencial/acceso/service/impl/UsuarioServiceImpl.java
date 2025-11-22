@@ -51,12 +51,14 @@ public class UsuarioServiceImpl implements IUsuarioService {
 
     @Override
     public void eliminar(String id) {
+        java.util.Objects.requireNonNull(id);
         Usuario usuario = obtenerPorId(id);
         usuarioRepository.delete(usuario);
     }
 
     @Override
     public Usuario obtenerPorId(String id) {
+        java.util.Objects.requireNonNull(id);
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
     }
@@ -68,6 +70,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
 
     @Override
     public Usuario activarDesactivar(String id, boolean activo) {
+        java.util.Objects.requireNonNull(id);
         Usuario usuario = obtenerPorId(id);
         usuario.setActivo(activo);
         return usuarioRepository.save(usuario);
