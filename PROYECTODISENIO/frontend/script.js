@@ -6,6 +6,7 @@ const USE_SIMPLE_AUTH = true; // Usar autenticación simple para pruebas
 let currentUser = null;
 let authToken = null;
 let activeRequests = new Set();
+let cachedVisitas = [];
 
 // Utility Functions
 function showLoading() {
@@ -212,8 +213,17 @@ function showDashboard() {
     }
     const btnEntrada = document.getElementById('btn-nueva-entrada');
     const btnSalida = document.getElementById('btn-nueva-salida');
+    const btnVisita = document.getElementById('btn-nueva-visita');
     if (btnEntrada) btnEntrada.style.display = currentUser.rol === 'VIGILANTE' ? 'inline-flex' : 'none';
     if (btnSalida) btnSalida.style.display = currentUser.rol === 'VIGILANTE' ? 'inline-flex' : 'none';
+    if (btnVisita) btnVisita.style.display = currentUser.rol === 'VIGILANTE' ? 'inline-flex' : 'none';
+
+    const roleSections = ['visitas', 'entradas', 'salidas'];
+    roleSections.forEach(sec => {
+        const btn = document.querySelector(`.nav-item[data-section="${sec}"]`);
+        if (!btn) return;
+        btn.style.display = currentUser.rol === 'RESIDENTE' ? 'none' : 'flex';
+    });
     
     loadDashboardData();
 }
@@ -303,7 +313,19 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
             throw new Error(msg);
         }
 
-        return response.json();
+        if (response.status === 204) {
+            return null;
+        }
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+        const text = await response.text();
+        try {
+            return text ? JSON.parse(text) : null;
+        } catch (_) {
+            return text || null;
+        }
     } finally {
         activeRequests.delete(controller);
     }
@@ -326,10 +348,24 @@ async function loadDashboardData() {
             apiRequest('/notificaciones/no-leidas')
         ]);
         
-        document.getElementById('total-visitas').textContent = visitas.length;
-        document.getElementById('total-entradas').textContent = entradas.length;
-        document.getElementById('total-salidas').textContent = salidas.length;
-        document.getElementById('total-notificaciones').textContent = notificaciones.length;
+        let vCount = visitas.length;
+        let eCount = entradas.length;
+        let sCount = salidas.length;
+        let nCount = notificaciones.length;
+        if (currentUser && currentUser.rol === 'RESIDENTE') {
+            vCount = (visitas || []).filter(v => String(v.residenteVisitado) === String(currentUser.id)).length;
+            eCount = (entradas || []).filter(e => String(e.usuarioId) === String(currentUser.id)).length;
+            sCount = (salidas || []).filter(s => {
+                const ent = (entradas || []).find(e => e.id === s.entradaId);
+                return ent && String(ent.usuarioId) === String(currentUser.id);
+            }).length;
+            nCount = (await apiRequest(`/notificaciones/residente/${currentUser.id}`)).length;
+        }
+        
+        document.getElementById('total-visitas').textContent = vCount;
+        document.getElementById('total-entradas').textContent = eCount;
+        document.getElementById('total-salidas').textContent = sCount;
+        document.getElementById('total-notificaciones').textContent = nCount;
         
         loadRecentActivity();
         
@@ -340,37 +376,74 @@ async function loadDashboardData() {
 
 async function loadRecentActivity() {
     try {
-        const [entradas, salidas] = await Promise.all([
+        const [entradas, salidas, visitas, usuarios] = await Promise.all([
             apiRequest('/entradas'),
-            apiRequest('/salidas')
+            apiRequest('/salidas'),
+            apiRequest('/visitantes'),
+            apiRequest('/usuarios')
         ]);
-        
-        const activities = [...entradas, ...salidas]
-            .sort((a, b) => new Date((b.horaEntrada || b.horaSalida)) - new Date((a.horaEntrada || a.horaSalida)))
+        const vMap = Object.fromEntries((visitas || []).map(v => [v.id, v]));
+        const uMap = Object.fromEntries((usuarios || []).map(u => [u.id, u]));
+        const eMap = Object.fromEntries((entradas || []).map(e => [e.id, e]));
+
+        let allActivities = [
+            ...(entradas || []).map(e => ({ type: 'entrada', data: e, time: e.horaEntrada })),
+            ...(salidas || []).map(s => ({ type: 'salida', data: s, time: s.horaSalida }))
+        ];
+
+        if (currentUser && currentUser.rol === 'RESIDENTE') {
+            allActivities = allActivities.filter(a => {
+                if (a.type === 'entrada') {
+                    const e = a.data;
+                    const v = e.visitanteId ? vMap[e.visitanteId] : null;
+                    return String(e.usuarioId) === String(currentUser.id) || (v && String(v.residenteVisitado) === String(currentUser.id));
+                } else {
+                    const s = a.data;
+                    const e = eMap[s.entradaId];
+                    const v = e && e.visitanteId ? vMap[e.visitanteId] : null;
+                    return e && (String(e.usuarioId) === String(currentUser.id) || (v && String(v.residenteVisitado) === String(currentUser.id)));
+                }
+            });
+        }
+
+        const activities = allActivities
+            .sort((a, b) => new Date(b.time) - new Date(a.time))
             .slice(0, 5);
-        
+
         const activityList = document.getElementById('recent-activity-list');
-        activityList.innerHTML = activities.map(activity => {
-            const isEntrada = activity.hasOwnProperty('horaEntrada');
+        activityList.innerHTML = activities.map(a => {
+            const isEntrada = a.type === 'entrada';
             const icon = isEntrada ? 'sign-in-alt' : 'sign-out-alt';
             const color = isEntrada ? 'success' : 'warning';
-            const action = isEntrada ? 'entró' : 'salió';
-            const visitorName = '-';
-            
+            let visitorName = '-';
+            let torreApto = '';
+            if (isEntrada) {
+                const e = a.data;
+                const v = e.visitanteId ? vMap[e.visitanteId] : null;
+                const u = (!v && e.usuarioId) ? uMap[e.usuarioId] : null;
+                visitorName = v?.nombre || u?.nombre || '-';
+                torreApto = `Torre ${e.torre || '-'}, Apto ${e.apartamento || '-'}`;
+            } else {
+                const s = a.data;
+                const e = eMap[s.entradaId];
+                const v = e && e.visitanteId ? vMap[e.visitanteId] : null;
+                const u = (!v && e && e.usuarioId) ? uMap[e.usuarioId] : null;
+                visitorName = v?.nombre || u?.nombre || '-';
+                torreApto = 'Registro de salida';
+            }
             return `
                 <div class="activity-item">
                     <div class="activity-icon" style="background-color: var(--${color}-color);">
                         <i class="fas fa-${icon}"></i>
                     </div>
                     <div class="activity-content">
-                        <h4>${visitorName} ${action}</h4>
-                        <p>${isEntrada ? `Torre ${activity.torre}, Apto ${activity.apartamento}` : 'Registro de salida'}</p>
+                        <h4>${visitorName} ${isEntrada ? 'entró' : 'salió'}</h4>
+                        <p>${torreApto}</p>
                     </div>
-                    <div class="activity-time">${formatDate(activity.horaEntrada || activity.horaSalida)}</div>
+                    <div class="activity-time">${formatDate(a.time)}</div>
                 </div>
             `;
         }).join('');
-        
     } catch (error) {
         showToast('Error al cargar actividad reciente', 'error');
     }
@@ -467,7 +540,7 @@ async function deleteVisita(id) {
     if (confirm('¿Está seguro de eliminar esta visita?')) {
         try {
             await apiRequest(`/visitantes/${id}`, 'DELETE');
-            showToast('Visita eliminada exitosamente', 'success');
+            showToast('Se eliminó visitante de manera exitosa', 'success');
             loadVisitas();
         } catch (error) {
             showToast('Error al eliminar visita', 'error');
@@ -501,8 +574,8 @@ async function loadEntradas() {
                 <td>${idDisplay}</td>
                 <td>${visitaDisplay}</td>
                 <td>${entrada.tipo || '-'}</td>
-                <td>-</td>
-                <td>-</td>
+                <td>${entrada.torre || '-'}</td>
+                <td>${entrada.apartamento || '-'}</td>
                 <td>${formatDate(entrada.horaEntrada)}</td>
                 <td>${entrada.registradoPor || '-'}</td>
                 <td class="actions">
@@ -519,15 +592,48 @@ async function loadEntradas() {
 async function loadVisitasForSelect() {
     try {
         const visitas = await apiRequest('/visitantes');
+        cachedVisitas = visitas || [];
         const select = document.getElementById('entrada-visita');
         
         select.innerHTML = '<option value="">Seleccionar visita...</option>' +
-            visitas.map(visita => `
+            (cachedVisitas || []).map(visita => `
                 <option value="${visita.documento}">${visita.nombre} - ${visita.documento}</option>
             `).join('');
-        
+
+        if (select) {
+            select.removeEventListener('change', handleVisitaChange);
+            select.addEventListener('change', handleVisitaChange);
+        }
     } catch (error) {
         showToast('Error al cargar visitas', 'error');
+    }
+}
+
+async function loadResidentesForSelect() {
+    try {
+        const usuarios = await apiRequest('/usuarios');
+        const residentes = (usuarios || []).filter(u => String(u.rol) === 'RESIDENTE');
+        const select = document.getElementById('entrada-residente');
+        if (!select) return;
+        select.innerHTML = '<option value="">Seleccionar residente...</option>' +
+            residentes.map(r => `
+                <option value="${r.id}">${r.nombre} - ${r.apartamento || ''}</option>
+            `).join('');
+    } catch (error) {
+        showToast('Error al cargar residentes', 'error');
+    }
+}
+
+function handleVisitaChange() {
+    const visitaSelect = document.getElementById('entrada-visita');
+    const residenteSelect = document.getElementById('entrada-residente');
+    if (!visitaSelect || !residenteSelect) return;
+    const group = residenteSelect.closest('.form-group');
+    const selectedDoc = visitaSelect.value;
+    const visita = (cachedVisitas || []).find(v => String(v.documento) === String(selectedDoc));
+    if (group) group.style.display = 'block';
+    if (visita && visita.residenteVisitado) {
+        residenteSelect.value = visita.residenteVisitado;
     }
 }
 
@@ -538,6 +644,9 @@ async function saveEntrada(formData) {
             return;
         }
         const documentoVisitante = formData.get('visitaId');
+        const torre = formData.get('torre');
+        const apartamento = formData.get('apartamento');
+        const observaciones = formData.get('observaciones');
 
         // Intentar obtener residente desde la visita seleccionada
         let visitas = [];
@@ -554,13 +663,17 @@ async function saveEntrada(formData) {
             const debugUsers = await fetch(`${API_BASE_URL}/debug/usuarios`).then(r => r.json());
             residentes = debugUsers.filter(u => String(u.rol) === 'RESIDENTE').map(u => ({ id: u.id, rol: 'RESIDENTE' }));
         }
-        let residenteId = visitaSel?.residenteVisitado || (residentes.find(u => String(u.rol) === 'RESIDENTE') || residentes[0])?.id;
+        let residenteIdSel = formData.get('residenteId');
+        let residenteId = residenteIdSel || visitaSel?.residenteVisitado || (residentes.find(u => String(u.rol) === 'RESIDENTE') || residentes[0])?.id;
         if (!residenteId) throw new Error('No hay residente disponible para registrar la entrada');
 
         const payload = {
             documentoVisitante,
             residenteId,
-            vigilanteId: currentUser.id
+            vigilanteId: currentUser.id,
+            torre,
+            apartamento,
+            observaciones
         };
 
         await apiRequest('/entradas/visitante', 'POST', payload);
@@ -827,12 +940,14 @@ async function deleteUsuario(id) {
 // Notificaciones Functions
 async function loadNotificaciones() {
     try {
-        const notificaciones = await apiRequest('/notificaciones/no-leidas');
+        const notificaciones = (currentUser && currentUser.rol === 'RESIDENTE')
+            ? await apiRequest(`/notificaciones/residente/${currentUser.id}`)
+            : await apiRequest('/notificaciones/no-leidas');
         const container = document.getElementById('notificaciones-list');
         
         function getNotificationType(mensaje) {
             const m = (mensaje || '').toLowerCase();
-            if (m.includes('ingresado') || m.includes('entrada')) return 'success';
+            if (m.includes('ingresado') || m.includes('entrada') || m.includes('registrada')) return 'success';
             if (m.includes('salido') || m.includes('salida')) return 'warning';
             return 'info';
         }
@@ -841,6 +956,7 @@ async function loadNotificaciones() {
             const m = (mensaje || '').toLowerCase();
             if (m.includes('ingresado') || m.includes('entrada')) return 'Entrada de visitante';
             if (m.includes('salido') || m.includes('salida')) return 'Salida de visitante';
+            if (m.includes('registrada') || m.includes('registró')) return 'Registro de visita';
             return 'Notificación';
         }
 
@@ -855,28 +971,37 @@ async function loadNotificaciones() {
                 </div>
                 <div class="notification-content">
                     <h4>${title}</h4>
-                    <p>${n.mensaje || ''}</p>
+                    <p class="notif-message">${(n.mensaje || '').toLowerCase()}</p>
+                </div>
+                <div class="notification-actions">
+                    <button class="btn btn-danger notification-delete" data-id="${n.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
                 <div class="notification-time">${formatDate(n.fecha)}</div>
             </div>`;
         }).join('');
+
+        document.querySelectorAll('.notification-delete').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const id = this.getAttribute('data-id');
+                try {
+                    await apiRequest(`/notificaciones/${id}`, 'DELETE');
+                    showToast('Notificación eliminada', 'success');
+                    loadNotificaciones();
+                    loadDashboardData();
+                } catch (error) {
+                    showToast('Error al eliminar notificación', 'error');
+                }
+            });
+        });
         
     } catch (error) {
         showToast('Error al cargar notificaciones', 'error');
     }
 }
 
-async function markNotificationsAsRead() {
-    try {
-        const pendientes = await apiRequest('/notificaciones/no-leidas');
-        await Promise.all((pendientes || []).map(n => apiRequest(`/notificaciones/${n.id}/leer`, 'PATCH')));
-        showToast('Notificaciones marcadas como leídas', 'success');
-        loadNotificaciones();
-        loadDashboardData(); // Update notification count
-    } catch (error) {
-        showToast('Error al marcar notificaciones', 'error');
-    }
-}
+// Eliminada función de marcar todas como leídas
 
 // Modal Functions
 function closeModal(modalId) {
@@ -937,6 +1062,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-nueva-visita').addEventListener('click', () => showVisitaModal());
     document.getElementById('btn-nueva-entrada').addEventListener('click', () => {
         loadVisitasForSelect();
+        loadResidentesForSelect();
+        const group = document.getElementById('entrada-residente')?.closest('.form-group');
+        if (group) group.style.display = 'block';
         document.getElementById('modal-entrada').classList.add('active');
     });
     document.getElementById('btn-nueva-salida').addEventListener('click', () => {
@@ -944,7 +1072,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal-salida').classList.add('active');
     });
     document.getElementById('btn-nuevo-usuario').addEventListener('click', () => showUsuarioModal());
-    document.getElementById('btn-marcar-leidas').addEventListener('click', markNotificationsAsRead);
+    // Botón de marcar todas como leídas eliminado
     
     // Form submissions
     document.getElementById('visita-form').addEventListener('submit', function(e) {

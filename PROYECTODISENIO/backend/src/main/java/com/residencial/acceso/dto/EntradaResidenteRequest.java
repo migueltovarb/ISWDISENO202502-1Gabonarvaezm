@@ -9,4 +9,7 @@ public class EntradaResidenteRequest {
     private String residenteId;
     @NotBlank
     private String vigilanteId;
+    private String torre;
+    private String apartamento;
+    private String observaciones;
 }

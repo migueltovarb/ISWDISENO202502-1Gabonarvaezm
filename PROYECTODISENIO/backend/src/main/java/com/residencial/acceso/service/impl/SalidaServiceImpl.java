@@ -1,14 +1,18 @@
 package com.residencial.acceso.service.impl;
 
+import com.residencial.acceso.dto.NotificacionDTO;
 import com.residencial.acceso.dto.SalidaRequest;
 import com.residencial.acceso.exception.BusinessException;
 import com.residencial.acceso.exception.NotFoundException;
 import com.residencial.acceso.model.Entrada;
 import com.residencial.acceso.model.Salida;
+import com.residencial.acceso.model.Visitante;
 import com.residencial.acceso.repository.EntradaRepository;
 import com.residencial.acceso.repository.SalidaRepository;
 import com.residencial.acceso.repository.UsuarioRepository;
+import com.residencial.acceso.repository.VisitanteRepository;
 import com.residencial.acceso.service.ISalidaService;
+import com.residencial.acceso.service.INotificacionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,11 +24,11 @@ public class SalidaServiceImpl implements ISalidaService {
     private final SalidaRepository salidaRepository;
     private final EntradaRepository entradaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final VisitanteRepository visitanteRepository;
+    private final INotificacionService notificacionService;
 
     @Override
     public Salida registrarSalida(SalidaRequest request) {
-        java.util.Objects.requireNonNull(request.getEntradaId());
-        java.util.Objects.requireNonNull(request.getVigilanteId());
         Entrada entrada = entradaRepository.findById(request.getEntradaId())
                 .orElseThrow(() -> new NotFoundException("Entrada no encontrada"));
         
@@ -43,7 +47,17 @@ public class SalidaServiceImpl implements ISalidaService {
         salida.setEntradaId(entrada.getId());
         salida.setRegistradoPor(vigilante.getNombre() + " " + vigilante.getApellido());
         
-        return salidaRepository.save(salida);
+        Salida guardada = salidaRepository.save(salida);
+        if (entrada.getVisitanteId() != null) {
+            Visitante v = visitanteRepository.findById(entrada.getVisitanteId()).orElse(null);
+            if (v != null && v.getResidenteVisitado() != null) {
+                NotificacionDTO n = new NotificacionDTO();
+                n.setResidenteId(v.getResidenteVisitado());
+                n.setMensaje("Se registró salida de " + v.getNombre());
+                notificacionService.enviar(n);
+            }
+        }
+        return guardada;
     }
 
     @Override
@@ -53,7 +67,6 @@ public class SalidaServiceImpl implements ISalidaService {
 
     @Override
     public void eliminar(String id) {
-        java.util.Objects.requireNonNull(id);
         Salida salida = salidaRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Salida no encontrada"));
         salidaRepository.delete(salida);

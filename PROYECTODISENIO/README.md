@@ -200,4 +200,3 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ---
 
-⭐ Si este proyecto te fue útil, ¡no olvides darle una estrella!

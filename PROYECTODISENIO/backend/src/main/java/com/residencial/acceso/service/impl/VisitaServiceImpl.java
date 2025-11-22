@@ -1,10 +1,12 @@
 package com.residencial.acceso.service.impl;
 
 import com.residencial.acceso.dto.VisitanteDTO;
+import com.residencial.acceso.dto.NotificacionDTO;
 import com.residencial.acceso.exception.NotFoundException;
 import com.residencial.acceso.model.Visitante;
 import com.residencial.acceso.repository.VisitanteRepository;
 import com.residencial.acceso.service.IVisitaService;
+import com.residencial.acceso.service.INotificacionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VisitaServiceImpl implements IVisitaService {
     private final VisitanteRepository visitanteRepository;
+    private final INotificacionService notificacionService;
 
     @Override
     public Visitante crear(VisitanteDTO dto) {
@@ -23,7 +26,14 @@ public class VisitaServiceImpl implements IVisitaService {
         visitante.setResidenteVisitado(dto.getResidenteVisitado());
         visitante.setMotivoVisita(dto.getMotivoVisita());
         visitante.setFotoOpcionalUrl(dto.getFotoOpcionalUrl());
-        return visitanteRepository.save(visitante);
+        Visitante creado = visitanteRepository.save(visitante);
+        if (creado.getResidenteVisitado() != null) {
+            NotificacionDTO n = new NotificacionDTO();
+            n.setResidenteId(creado.getResidenteVisitado());
+            n.setMensaje("Se registró visita de " + creado.getNombre());
+            notificacionService.enviar(n);
+        }
+        return creado;
     }
 
     @Override

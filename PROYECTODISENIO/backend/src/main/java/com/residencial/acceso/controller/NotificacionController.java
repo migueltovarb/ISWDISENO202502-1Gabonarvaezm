@@ -43,4 +43,10 @@ public class NotificacionController {
     public Notificacion marcarLeida(@PathVariable String id) {
         return notificacionService.marcarLeida(id);
     }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Eliminar notificación", description = "Eliminar una notificación")
+    public void eliminar(@PathVariable String id) {
+        notificacionService.eliminar(id);
+    }
 }

@@ -457,6 +457,30 @@ body {
     font-size: 0.75rem;
 }
 
+.notif-message {
+    text-transform: lowercase;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    color: var(--primary-color);
+    background: rgba(0, 123, 255, 0.12);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    display: inline-block;
+}
+
+.notification-actions {
+    margin-left: 0.5rem;
+}
+
+.notification-actions .btn.btn-danger {
+    background: var(--danger-color);
+    color: #fff;
+    border: none;
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
 /* Search Bar */
 .search-bar {
     display: flex;

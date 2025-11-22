@@ -1,6 +1,7 @@
 package com.residencial.acceso.security;
 
 import com.residencial.acceso.model.Usuario;
+import com.residencial.acceso.model.Rol;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

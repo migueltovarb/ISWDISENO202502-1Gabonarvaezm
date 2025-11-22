@@ -16,4 +16,7 @@ public class Entrada {
     private TipoEntrada tipo;
     private Instant horaEntrada = Instant.now();
     private String registradoPor;
+    private String torre;
+    private String apartamento;
+    private String observaciones;
 }

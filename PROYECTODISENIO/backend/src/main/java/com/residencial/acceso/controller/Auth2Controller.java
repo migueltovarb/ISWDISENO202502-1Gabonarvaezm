@@ -1,5 +1,6 @@
 package com.residencial.acceso.controller;
 
+import com.residencial.acceso.dto.AuthResponse;
 import com.residencial.acceso.model.Usuario;
 import com.residencial.acceso.model.Rol;
 import com.residencial.acceso.repository.UsuarioRepository;

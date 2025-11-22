@@ -78,6 +78,51 @@ public class DataInitializer {
                 usuarioRepository.save(residente);
                 System.out.println("Usuario residente creado: residente@residencial.com / residente123");
             }
+
+            // Crear segundo usuario residente de prueba
+            if (!usuarioRepository.findByEmail("residente2@residencial.com").isPresent()) {
+                Usuario residente2 = new Usuario();
+                residente2.setNombre("Residente Ejemplo 2");
+                residente2.setApellido("Residente");
+                residente2.setEmail("residente2@residencial.com");
+                residente2.setContrasena(passwordEncoder.encode("residente123"));
+                residente2.setRol(Rol.RESIDENTE);
+                residente2.setApartamento("102");
+                residente2.setActivo(true);
+                
+                usuarioRepository.save(residente2);
+                System.out.println("Usuario residente creado: residente2@residencial.com / residente123");
+            }
+
+            // Crear tercer usuario residente de prueba
+            if (!usuarioRepository.findByEmail("residente3@residencial.com").isPresent()) {
+                Usuario residente3 = new Usuario();
+                residente3.setNombre("Residente Torre 2");
+                residente3.setApellido("Apto 201");
+                residente3.setEmail("residente3@residencial.com");
+                residente3.setContrasena(passwordEncoder.encode("residente123"));
+                residente3.setRol(Rol.RESIDENTE);
+                residente3.setApartamento("201");
+                residente3.setActivo(true);
+
+                usuarioRepository.save(residente3);
+                System.out.println("Usuario residente creado: residente3@residencial.com / residente123");
+            }
+
+            // Crear cuarto usuario residente de prueba
+            if (!usuarioRepository.findByEmail("residente4@residencial.com").isPresent()) {
+                Usuario residente4 = new Usuario();
+                residente4.setNombre("Residente Torre 2");
+                residente4.setApellido("Apto 202");
+                residente4.setEmail("residente4@residencial.com");
+                residente4.setContrasena(passwordEncoder.encode("residente123"));
+                residente4.setRol(Rol.RESIDENTE);
+                residente4.setApartamento("202");
+                residente4.setActivo(true);
+
+                usuarioRepository.save(residente4);
+                System.out.println("Usuario residente creado: residente4@residencial.com / residente123");
+            }
         };
     }
 }

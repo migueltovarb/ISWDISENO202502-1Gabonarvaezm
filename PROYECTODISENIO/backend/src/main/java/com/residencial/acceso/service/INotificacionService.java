@@ -10,4 +10,5 @@ public interface INotificacionService {
     List<Notificacion> listarPorResidente(String residenteId);
     Notificacion marcarLeida(String id);
     List<Notificacion> listarNoLeidas();
+    void eliminar(String id);
 }

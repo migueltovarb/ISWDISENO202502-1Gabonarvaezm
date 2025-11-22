@@ -16,7 +16,6 @@ import com.residencial.acceso.service.IEntradaService;
 import com.residencial.acceso.service.INotificacionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import java.util.Objects;
 
 import java.util.List;
 
@@ -30,9 +29,6 @@ public class EntradaServiceImpl implements IEntradaService {
 
     @Override
     public Entrada registrarEntradaVisitante(EntradaVisitanteRequest request) {
-        Objects.requireNonNull(request.getDocumentoVisitante());
-        Objects.requireNonNull(request.getResidenteId());
-        Objects.requireNonNull(request.getVigilanteId());
         Visitante visitante = visitanteRepository.findByDocumento(request.getDocumentoVisitante())
                 .orElseThrow(() -> new NotFoundException("Visitante no encontrado"));
         
@@ -50,22 +46,15 @@ public class EntradaServiceImpl implements IEntradaService {
         entrada.setVisitanteId(visitante.getId());
         entrada.setTipo(TipoEntrada.VISITANTE);
         entrada.setRegistradoPor(vigilante.getNombre() + " " + vigilante.getApellido());
+        entrada.setTorre(request.getTorre());
+        entrada.setApartamento(request.getApartamento());
+        entrada.setObservaciones(request.getObservaciones());
         
-        Entrada entradaGuardada = entradaRepository.save(entrada);
-        
-        // Enviar notificación al residente
-        NotificacionDTO notificacionDTO = new NotificacionDTO();
-        notificacionDTO.setResidenteId(residente.getId());
-        notificacionDTO.setMensaje("Visitante " + visitante.getNombre() + " ha ingresado al conjunto");
-        notificacionService.enviar(notificacionDTO);
-        
-        return entradaGuardada;
+        return entradaRepository.save(entrada);
     }
 
     @Override
     public Entrada registrarEntradaResidente(EntradaResidenteRequest request) {
-        Objects.requireNonNull(request.getResidenteId());
-        Objects.requireNonNull(request.getVigilanteId());
         Usuario residente = usuarioRepository.findById(request.getResidenteId())
                 .orElseThrow(() -> new NotFoundException("Residente no encontrado"));
         
@@ -80,6 +69,9 @@ public class EntradaServiceImpl implements IEntradaService {
         entrada.setUsuarioId(residente.getId());
         entrada.setTipo(TipoEntrada.RESIDENTE);
         entrada.setRegistradoPor(vigilante.getNombre() + " " + vigilante.getApellido());
+        entrada.setTorre(request.getTorre());
+        entrada.setApartamento(request.getApartamento());
+        entrada.setObservaciones(request.getObservaciones());
         
         return entradaRepository.save(entrada);
     }
