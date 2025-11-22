@@ -1,6 +1,29 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:8080/api';
-const USE_SIMPLE_AUTH = true; // Usar autenticación simple para pruebas
+let API_BASE_URL = null;
+const USE_SIMPLE_AUTH = true;
+
+async function ensureApiBaseUrl() {
+    if (API_BASE_URL) return API_BASE_URL;
+    const originBase = typeof window !== 'undefined' && window.location && /^https?:\/\//.test(window.location.origin)
+        ? `${window.location.origin}/api`
+        : null;
+    const candidates = [
+        originBase,
+        'http://localhost:8080/api',
+        'http://localhost:8082/api'
+    ].filter(Boolean);
+    for (const base of candidates) {
+        try {
+            const res = await fetch(`${base}/auth2/usuarios`, { method: 'GET' });
+            if (res.ok || res.status === 400) {
+                API_BASE_URL = base;
+                return API_BASE_URL;
+            }
+        } catch (_) {}
+    }
+    API_BASE_URL = candidates[0] || 'http://localhost:8080/api';
+    return API_BASE_URL;
+}
 
 // Global State
 let currentUser = null;
@@ -276,6 +299,7 @@ function showSection(sectionId) {
 
 // API Functions
 async function apiRequest(endpoint, method = 'GET', body = null) {
+    await ensureApiBaseUrl();
     if (!authToken && !endpoint.startsWith('/auth') && !endpoint.startsWith('/auth2')) {
         if (method === 'GET') return [];
         throw new Error('No autenticado');
