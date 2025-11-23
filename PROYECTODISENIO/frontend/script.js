@@ -8,9 +8,9 @@ async function ensureApiBaseUrl() {
         ? `${window.location.origin}/api`
         : null;
     const candidates = [
-        originBase,
         'http://localhost:8080/api',
-        'http://localhost:8082/api'
+        'http://localhost:8082/api',
+        originBase
     ].filter(Boolean);
     for (const base of candidates) {
         try {
@@ -21,7 +21,7 @@ async function ensureApiBaseUrl() {
             }
         } catch (_) {}
     }
-    API_BASE_URL = candidates[0] || 'http://localhost:8080/api';
+    API_BASE_URL = 'http://localhost:8080/api';
     return API_BASE_URL;
 }
 
@@ -106,6 +106,7 @@ function formatDateOnly(dateString) {
 async function login(email, password) {
     try {
         showLoading();
+        await ensureApiBaseUrl();
         
         let response;
         let data;

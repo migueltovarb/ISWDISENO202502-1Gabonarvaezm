@@ -29,16 +29,21 @@ public class EntradaServiceImpl implements IEntradaService {
 
     @Override
     public Entrada registrarEntradaVisitante(EntradaVisitanteRequest request) {
-        Visitante visitante = visitanteRepository.findByDocumento(request.getDocumentoVisitante())
+        String doc = request.getDocumentoVisitante() != null ? request.getDocumentoVisitante().trim() : null;
+        if (doc == null || doc.isEmpty()) {
+            throw new BusinessException("Documento de visitante requerido");
+        }
+
+        Visitante visitante = visitanteRepository.findByDocumento(doc)
                 .orElseThrow(() -> new NotFoundException("Visitante no encontrado"));
-        
+
         Usuario residente = usuarioRepository.findById(request.getResidenteId())
                 .orElseThrow(() -> new NotFoundException("Residente no encontrado"));
-        
+
         Usuario vigilante = usuarioRepository.findById(request.getVigilanteId())
                 .orElseThrow(() -> new NotFoundException("Vigilante no encontrado"));
 
-        if (vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
+        if (vigilante.getRol() == null || vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
             throw new BusinessException("Solo un vigilante puede registrar entradas");
         }
 
@@ -49,7 +54,7 @@ public class EntradaServiceImpl implements IEntradaService {
         entrada.setTorre(request.getTorre());
         entrada.setApartamento(request.getApartamento());
         entrada.setObservaciones(request.getObservaciones());
-        
+
         return entradaRepository.save(entrada);
     }
 
@@ -61,7 +66,7 @@ public class EntradaServiceImpl implements IEntradaService {
         Usuario vigilante = usuarioRepository.findById(request.getVigilanteId())
                 .orElseThrow(() -> new NotFoundException("Vigilante no encontrado"));
 
-        if (vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
+        if (vigilante.getRol() == null || vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
             throw new BusinessException("Solo un vigilante puede registrar entradas");
         }
 
