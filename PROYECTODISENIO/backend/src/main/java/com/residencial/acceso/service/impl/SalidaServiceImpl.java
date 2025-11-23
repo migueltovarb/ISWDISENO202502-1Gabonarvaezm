@@ -36,10 +36,11 @@ public class SalidaServiceImpl implements ISalidaService {
             throw new BusinessException("Ya existe una salida registrada para esta entrada");
         }
 
-        com.residencial.acceso.model.Usuario vigilante = usuarioRepository.findById(request.getVigilanteId())
-                .orElseThrow(() -> new NotFoundException("Vigilante no encontrado"));
-
-        if (vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        com.residencial.acceso.model.Usuario vigilante = auth instanceof org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+                ? ((com.residencial.acceso.security.UserDetailsImpl) auth.getPrincipal()).getUsuario()
+                : null;
+        if (vigilante == null || vigilante.getRol() == null || vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
             throw new BusinessException("Solo un vigilante puede registrar salidas");
         }
 
