@@ -37,16 +37,24 @@ public class SalidaServiceImpl implements ISalidaService {
         }
 
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        com.residencial.acceso.model.Usuario vigilante = auth instanceof org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-                ? ((com.residencial.acceso.security.UserDetailsImpl) auth.getPrincipal()).getUsuario()
-                : null;
-        if (vigilante == null || vigilante.getRol() == null || vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
+        com.residencial.acceso.model.Usuario vigilante = null;
+        if (auth != null && auth.isAuthenticated()) {
+            Object principal = auth.getPrincipal();
+            if (principal instanceof com.residencial.acceso.security.UserDetailsImpl details) {
+                vigilante = details.getUsuario();
+            }
+        }
+        if (vigilante == null) {
+            throw new com.residencial.acceso.exception.UnauthorizedException("No autenticado");
+        }
+        if (vigilante.getRol() == null || vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
             throw new BusinessException("Solo un vigilante puede registrar salidas");
         }
 
         Salida salida = new Salida();
         salida.setEntradaId(entrada.getId());
-        salida.setRegistradoPor(vigilante.getNombre() + " " + vigilante.getApellido());
+        String apellido = vigilante.getApellido() != null ? vigilante.getApellido() : "";
+        salida.setRegistradoPor(vigilante.getNombre() + (apellido.isEmpty() ? "" : (" " + apellido)));
         
         Salida guardada = salidaRepository.save(salida);
         if (entrada.getVisitanteId() != null) {

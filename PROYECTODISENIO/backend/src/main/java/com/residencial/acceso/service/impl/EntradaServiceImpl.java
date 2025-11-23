@@ -41,17 +41,25 @@ public class EntradaServiceImpl implements IEntradaService {
                 .orElseThrow(() -> new NotFoundException("Residente no encontrado"));
 
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        com.residencial.acceso.model.Usuario vigilante = auth instanceof org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-                ? ((com.residencial.acceso.security.UserDetailsImpl) auth.getPrincipal()).getUsuario()
-                : null;
-        if (vigilante == null || vigilante.getRol() == null || vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
+        com.residencial.acceso.model.Usuario vigilante = null;
+        if (auth != null && auth.isAuthenticated()) {
+            Object principal = auth.getPrincipal();
+            if (principal instanceof com.residencial.acceso.security.UserDetailsImpl details) {
+                vigilante = details.getUsuario();
+            }
+        }
+        if (vigilante == null) {
+            throw new com.residencial.acceso.exception.UnauthorizedException("No autenticado");
+        }
+        if (vigilante.getRol() == null || vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
             throw new BusinessException("Solo un vigilante puede registrar entradas");
         }
 
         Entrada entrada = new Entrada();
         entrada.setVisitanteId(visitante.getId());
         entrada.setTipo(TipoEntrada.VISITANTE);
-        entrada.setRegistradoPor(vigilante.getNombre() + " " + vigilante.getApellido());
+        String apellido = vigilante.getApellido() != null ? vigilante.getApellido() : "";
+        entrada.setRegistradoPor(vigilante.getNombre() + (apellido.isEmpty() ? "" : (" " + apellido)));
         entrada.setTorre(request.getTorre());
         entrada.setApartamento(request.getApartamento());
         entrada.setObservaciones(request.getObservaciones());
@@ -65,17 +73,25 @@ public class EntradaServiceImpl implements IEntradaService {
                 .orElseThrow(() -> new NotFoundException("Residente no encontrado"));
         
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        com.residencial.acceso.model.Usuario vigilante = auth instanceof org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-                ? ((com.residencial.acceso.security.UserDetailsImpl) auth.getPrincipal()).getUsuario()
-                : null;
-        if (vigilante == null || vigilante.getRol() == null || vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
+        com.residencial.acceso.model.Usuario vigilante = null;
+        if (auth != null && auth.isAuthenticated()) {
+            Object principal = auth.getPrincipal();
+            if (principal instanceof com.residencial.acceso.security.UserDetailsImpl details) {
+                vigilante = details.getUsuario();
+            }
+        }
+        if (vigilante == null) {
+            throw new com.residencial.acceso.exception.UnauthorizedException("No autenticado");
+        }
+        if (vigilante.getRol() == null || vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
             throw new BusinessException("Solo un vigilante puede registrar entradas");
         }
 
         Entrada entrada = new Entrada();
         entrada.setUsuarioId(residente.getId());
         entrada.setTipo(TipoEntrada.RESIDENTE);
-        entrada.setRegistradoPor(vigilante.getNombre() + " " + vigilante.getApellido());
+        String apellido2 = vigilante.getApellido() != null ? vigilante.getApellido() : "";
+        entrada.setRegistradoPor(vigilante.getNombre() + (apellido2.isEmpty() ? "" : (" " + apellido2)));
         entrada.setTorre(request.getTorre());
         entrada.setApartamento(request.getApartamento());
         entrada.setObservaciones(request.getObservaciones());
