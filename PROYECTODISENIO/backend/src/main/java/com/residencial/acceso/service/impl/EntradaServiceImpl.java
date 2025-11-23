@@ -64,7 +64,16 @@ public class EntradaServiceImpl implements IEntradaService {
         entrada.setApartamento(request.getApartamento());
         entrada.setObservaciones(request.getObservaciones());
 
-        return entradaRepository.save(entrada);
+        Entrada guardada = entradaRepository.save(entrada);
+
+        NotificacionDTO n = new NotificacionDTO();
+        n.setResidenteId(residente.getId());
+        n.setMensaje("Se registró ingreso de " + visitante.getNombre());
+        try {
+            notificacionService.enviar(n);
+        } catch (Exception ignored) {}
+
+        return guardada;
     }
 
     @Override
