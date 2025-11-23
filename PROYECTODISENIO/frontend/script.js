@@ -30,6 +30,7 @@ let currentUser = null;
 let authToken = null;
 let activeRequests = new Set();
 let cachedVisitas = [];
+let dashboardRefreshTimer = null;
 
 // Utility Functions
 function showLoading() {
@@ -214,6 +215,7 @@ async function login(email, password) {
 
 function logout() {
     cancelActiveRequests();
+    if (dashboardRefreshTimer) { clearInterval(dashboardRefreshTimer); dashboardRefreshTimer = null; }
     authToken = null;
     currentUser = null;
     localStorage.removeItem('authToken');
@@ -251,6 +253,7 @@ function showLoginScreen() {
     document.getElementById('login-form').reset();
     document.getElementById('login-error').textContent = '';
     // permitir scroll siempre
+    if (dashboardRefreshTimer) { clearInterval(dashboardRefreshTimer); dashboardRefreshTimer = null; }
 }
 
 function showDashboard() {
@@ -296,6 +299,15 @@ function showDashboard() {
     });
     
     loadDashboardData();
+
+    if (dashboardRefreshTimer) { clearInterval(dashboardRefreshTimer); }
+    if (currentUser && currentUser.rol === 'RESIDENTE') {
+        dashboardRefreshTimer = setInterval(() => {
+            loadDashboardData();
+        }, 5000);
+    } else {
+        dashboardRefreshTimer = null;
+    }
 }
 
 // Navigation
