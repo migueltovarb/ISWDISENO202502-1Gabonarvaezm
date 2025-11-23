@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface INotificacionService {
     Notificacion enviar(NotificacionDTO dto);
+    Notificacion enviarGeneral(String mensaje);
     List<Notificacion> listarPorResidente(String residenteId);
     Notificacion marcarLeida(String id);
     List<Notificacion> listarNoLeidas();

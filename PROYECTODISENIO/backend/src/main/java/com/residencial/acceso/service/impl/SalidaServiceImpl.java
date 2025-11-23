@@ -53,11 +53,8 @@ public class SalidaServiceImpl implements ISalidaService {
         Salida guardada = salidaRepository.save(salida);
         if (entrada.getVisitanteId() != null) {
             Visitante v = visitanteRepository.findById(entrada.getVisitanteId()).orElse(null);
-            if (v != null && v.getResidenteVisitado() != null) {
-                NotificacionDTO n = new NotificacionDTO();
-                n.setResidenteId(v.getResidenteVisitado());
-                n.setMensaje("Se registró salida de " + v.getNombre());
-                notificacionService.enviar(n);
+            if (v != null) {
+                try { notificacionService.enviarGeneral("Salida de visitante: " + v.getNombre()); } catch (Exception ignored) {}
             }
         }
         return guardada;

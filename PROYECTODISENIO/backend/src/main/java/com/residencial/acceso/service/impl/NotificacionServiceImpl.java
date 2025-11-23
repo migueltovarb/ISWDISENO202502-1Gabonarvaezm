@@ -29,6 +29,14 @@ public class NotificacionServiceImpl implements INotificacionService {
     }
 
     @Override
+    public Notificacion enviarGeneral(String mensaje) {
+        Notificacion notificacion = new Notificacion();
+        notificacion.setResidenteId(null);
+        notificacion.setMensaje(mensaje);
+        return notificacionRepository.save(notificacion);
+    }
+
+    @Override
     public List<Notificacion> listarPorResidente(String residenteId) {
         return notificacionRepository.findByResidenteId(residenteId);
     }
