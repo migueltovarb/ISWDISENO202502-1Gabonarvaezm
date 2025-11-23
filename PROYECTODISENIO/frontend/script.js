@@ -82,10 +82,37 @@ async function parseJsonLooseResponse(response) {
         return JSON.parse(text);
     } catch (_) {
         const start = text.indexOf('{');
-        const end = text.lastIndexOf('}');
-        if (start !== -1 && end !== -1 && end > start) {
-            const candidate = text.slice(start, end + 1);
-            try { return JSON.parse(candidate); } catch (_) {}
+        if (start !== -1) {
+            let depth = 0;
+            for (let i = start; i < text.length; i++) {
+                const ch = text[i];
+                if (ch === '{') depth++;
+                else if (ch === '}') {
+                    depth--;
+                    if (depth === 0) {
+                        const candidate = text.slice(start, i + 1);
+                        try { return JSON.parse(candidate); } catch (_) {}
+                        break;
+                    }
+                }
+            }
+        }
+        // Si no se puede parsear, intenta extraer el último bloque válido
+        const lastStart = text.lastIndexOf('{');
+        if (lastStart !== -1) {
+            let depth = 0;
+            for (let i = lastStart; i < text.length; i++) {
+                const ch = text[i];
+                if (ch === '{') depth++;
+                else if (ch === '}') {
+                    depth--;
+                    if (depth === 0) {
+                        const candidate = text.slice(lastStart, i + 1);
+                        try { return JSON.parse(candidate); } catch (_) {}
+                        break;
+                    }
+                }
+            }
         }
         throw new Error(text || 'Respuesta no válida');
     }
