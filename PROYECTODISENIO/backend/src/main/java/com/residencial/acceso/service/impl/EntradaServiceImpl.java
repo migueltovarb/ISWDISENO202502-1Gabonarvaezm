@@ -40,17 +40,11 @@ public class EntradaServiceImpl implements IEntradaService {
         Usuario residente = usuarioRepository.findById(request.getResidenteId())
                 .orElseThrow(() -> new NotFoundException("Residente no encontrado"));
 
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        com.residencial.acceso.model.Usuario vigilante = null;
-        if (auth != null && auth.isAuthenticated()) {
-            Object principal = auth.getPrincipal();
-            if (principal instanceof com.residencial.acceso.security.UserDetailsImpl details) {
-                vigilante = details.getUsuario();
-            }
+        if (request.getVigilanteId() == null || request.getVigilanteId().isBlank()) {
+            throw new BusinessException("Vigilante requerido");
         }
-        if (vigilante == null) {
-            throw new com.residencial.acceso.exception.UnauthorizedException("No autenticado");
-        }
+        com.residencial.acceso.model.Usuario vigilante = usuarioRepository.findById(request.getVigilanteId())
+                .orElseThrow(() -> new NotFoundException("Vigilante no encontrado"));
         if (vigilante.getRol() == null || vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
             throw new BusinessException("Solo un vigilante puede registrar entradas");
         }
@@ -72,17 +66,11 @@ public class EntradaServiceImpl implements IEntradaService {
         Usuario residente = usuarioRepository.findById(request.getResidenteId())
                 .orElseThrow(() -> new NotFoundException("Residente no encontrado"));
         
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        com.residencial.acceso.model.Usuario vigilante = null;
-        if (auth != null && auth.isAuthenticated()) {
-            Object principal = auth.getPrincipal();
-            if (principal instanceof com.residencial.acceso.security.UserDetailsImpl details) {
-                vigilante = details.getUsuario();
-            }
+        if (request.getVigilanteId() == null || request.getVigilanteId().isBlank()) {
+            throw new BusinessException("Vigilante requerido");
         }
-        if (vigilante == null) {
-            throw new com.residencial.acceso.exception.UnauthorizedException("No autenticado");
-        }
+        com.residencial.acceso.model.Usuario vigilante = usuarioRepository.findById(request.getVigilanteId())
+                .orElseThrow(() -> new NotFoundException("Vigilante no encontrado"));
         if (vigilante.getRol() == null || vigilante.getRol() != com.residencial.acceso.model.Rol.VIGILANTE) {
             throw new BusinessException("Solo un vigilante puede registrar entradas");
         }
