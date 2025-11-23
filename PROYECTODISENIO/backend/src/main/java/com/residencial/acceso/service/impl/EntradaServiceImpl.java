@@ -34,8 +34,14 @@ public class EntradaServiceImpl implements IEntradaService {
             throw new BusinessException("Documento de visitante requerido");
         }
 
-        Visitante visitante = visitanteRepository.findByDocumento(doc)
-                .orElseThrow(() -> new NotFoundException("Visitante no encontrado"));
+        List<Visitante> coincidencias = visitanteRepository.findByDocumento(doc);
+        if (coincidencias == null || coincidencias.isEmpty()) {
+            throw new NotFoundException("Visitante no encontrado");
+        }
+        Visitante visitante = coincidencias.stream()
+                .sorted(java.util.Comparator.comparing(Visitante::getFechaRegistro).reversed())
+                .findFirst()
+                .get();
 
         Usuario residente = usuarioRepository.findById(request.getResidenteId())
                 .orElseThrow(() -> new NotFoundException("Residente no encontrado"));

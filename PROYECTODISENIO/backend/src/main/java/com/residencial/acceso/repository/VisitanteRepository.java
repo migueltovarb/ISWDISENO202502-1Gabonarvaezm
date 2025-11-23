@@ -6,5 +6,5 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.Optional;
 
 public interface VisitanteRepository extends MongoRepository<Visitante, String> {
-    Optional<Visitante> findByDocumento(String documento);
+    java.util.List<Visitante> findByDocumento(String documento);
 }
