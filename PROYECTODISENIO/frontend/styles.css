@@ -1080,17 +1080,12 @@ body {
 
 .shadow { box-shadow: var(--shadow-md); }
 .shadow-lg { box-shadow: var(--shadow-lg); }
-/* Disable page scroll when logged in to dashboard */
-body.no-scroll {
-  overflow: hidden;
-}
-
-/* Ensure dashboard fills the viewport */
+/* Allow page scrolling on all screens */
 #dashboard-screen {
-  height: 100vh;
+  min-height: 100vh;
+  overflow-y: auto;
 }
 
-/* Allow internal section scrolling if content exceeds viewport */
 .content-section {
-  overflow: auto;
+  overflow: visible;
 }

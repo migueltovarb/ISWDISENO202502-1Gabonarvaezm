@@ -250,7 +250,7 @@ function showLoginScreen() {
     }
     document.getElementById('login-form').reset();
     document.getElementById('login-error').textContent = '';
-    document.body.classList.remove('no-scroll');
+    // permitir scroll siempre
 }
 
 function showDashboard() {
@@ -267,7 +267,7 @@ function showDashboard() {
     } else {
         document.getElementById('dashboard-screen').classList.add('active');
     }
-    document.body.classList.add('no-scroll');
+    // permitir scroll siempre
     window.scrollTo(0, 0);
     
     // Update user info
