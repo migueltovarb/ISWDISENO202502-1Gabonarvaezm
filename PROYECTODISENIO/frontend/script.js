@@ -76,6 +76,21 @@ function getToastIcon(type) {
     return icons[type] || 'info-circle';
 }
 
+async function parseJsonLooseResponse(response) {
+    const text = await response.text();
+    try {
+        return JSON.parse(text);
+    } catch (_) {
+        const start = text.indexOf('{');
+        const end = text.lastIndexOf('}');
+        if (start !== -1 && end !== -1 && end > start) {
+            const candidate = text.slice(start, end + 1);
+            try { return JSON.parse(candidate); } catch (_) {}
+        }
+        throw new Error(text || 'Respuesta no válida');
+    }
+}
+
 function removeToast(toastId) {
     const toast = document.getElementById(toastId);
     if (toast) {
@@ -122,10 +137,12 @@ async function login(email, password) {
             });
             
             if (!response.ok) {
-                throw new Error('Credenciales inválidas');
+                const errBody = await parseJsonLooseResponse(response).catch(() => null);
+                const msg = errBody && (errBody.error || errBody.message) ? (errBody.error || errBody.message) : 'Credenciales inválidas';
+                throw new Error(msg);
             }
             
-            const result = await response.json();
+            const result = await parseJsonLooseResponse(response);
             authToken = result.token;
             currentUser = {
                 id: result.usuario.id,
@@ -144,10 +161,12 @@ async function login(email, password) {
             });
 
             if (!response.ok) {
-                throw new Error('Credenciales inválidas');
+                const errBody = await parseJsonLooseResponse(response).catch(() => null);
+                const msg = errBody && (errBody.error || errBody.message) ? (errBody.error || errBody.message) : 'Credenciales inválidas';
+                throw new Error(msg);
             }
 
-            data = await response.json();
+            data = await parseJsonLooseResponse(response);
             authToken = data.token;
             currentUser = data.usuario;
         }
